@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.BusinessTripDao">
+    <parameterMap id="BusinessTripDO" type="com.lx.attendance.model.domain.BusinessTripDO"/>
+    <sql id="select_colunm">
+        id, start_time, end_time, working_days, rest_days, holiday_days,apply_reason, apply_time, audit_time, state ,province, city, district,user_id
+    </sql>
+    <sql id="select_colunm2">
+         start_time, end_time, working_days, rest_days, holiday_days,apply_reason, apply_time, audit_time, state ,province, city, district,user_id
+    </sql>
+    <!--新增出差记录-->
+    <insert id="insertBusinessTrip" parameterType="BusinessTripDO">
+        insert  into t_business_trip(start_time, end_time, working_days, rest_days, holiday_days, apply_reason, apply_time, state, province, city, district, user_id)
+        values (#{startTime}, #{endTime}, #{workingDays}, #{restDays}, #{holidayDays},#{applyReason}, now(), 0, #{province}, #{city}, #{district}, #{userId})
+    </insert>
+    <!--根据id查询记录-->
+    <select id="findBusinessTripById" parameterType="Long" resultType="BusinessTripDO">
+        select
+        <include refid="select_colunm"/>
+        from t_business_trip
+        where id = #{id}
+    </select>
+    <!--修改出差记录 -->
+    <update id="updateBusinessTripById" parameterType="BusinessTripDO">
+        update t_business_trip set
+        start_time = #{startTime},
+        end_time = #{endTime},
+        working_days = #{workingDays},
+        rest_days = #{restDays},
+        holiday_days = #{holidayDays},
+        apply_reason = #{applyReason},
+        province = #{province},
+        city = #{city},
+        district = #{district}
+        where id = #{id} and state != 1
+    </update>
+    <!--用户查询出差记录申请-->
+    <select id="findBusinessTripByUserId" resultType="BusinessTripDO">
+        select<include refid="select_colunm"/>,bt.working_days+bt.rest_days+bt.holiday_days numberDay
+        FROM t_business_trip bt
+        where user_id = #{userId}
+        <choose>
+            <when test="startTime != null and endTime != null">
+                and #{startTime} >= l.start_time and l.end_time >= #{endTime}
+            </when>
+        </choose>
+        order by field(state,0,2,1),apply_time desc
+    </select>
+
+    <!--管理员出差记录申请-->
+    <select id="findBusinessTrip" resultType="BusinessTripDO">
+        select bt.id, <include refid="select_colunm2"/>,bt.working_days+bt.rest_days+bt.holiday_days numberDay,u.nickname
+        FROM t_business_trip bt
+        INNER JOIN t_user u on bt.user_id = u.id
+        where 1=1
+        <choose>
+            <when test="startTime != null and endTime != null">
+                and #{startTime} >= l.start_time and l.end_time >= #{endTime}
+            </when>
+            <when test="keyword != null and keyword != ''">
+                and u.nickname like concat('%',#{keyword},'%')
+            </when>
+        </choose>
+        order by field(bt.state,0,2,1),apply_time desc
+    </select>
+    <!--修改请假记录状态-->
+    <update id="updateBusinessTripState">
+        update t_business_trip
+        <set>
+            <if test="type == 1">
+                state = 1
+            </if>
+            <if test="type == 2 ">
+                state = 0
+            </if>
+            <if test="type == 3 ">
+                state = 2
+            </if>
+            ,audit_time = NOW()
+        </set>
+        where id = #{id}
+        <choose>
+            <when test="type == 1">
+                and state = 0
+            </when>
+            <when test="type == 2">
+                and state != 0
+            </when>
+            <when test="type == 3">
+                and state = 0
+            </when>
+        </choose>
+    </update>
+
+    <!--删除驳回或者审核中的记录-->
+    <delete id="deleteBusinessTrip" parameterType="Long">
+        delete from t_business_trip where id = #{id} and state != 1;
+    </delete>
+
+
+    <!--根据系统时间是否存于出差中-->
+    <select id="findBusinessTripBySystemDate" resultType="BusinessTripDO">
+        SELECT * FROM t_business_trip bt
+        WHERE DATE_FORMAT(#{systemDate},'%Y-%m-%d') >= bt.start_time AND bt.end_time >= DATE_FORMAT(#{systemDate},'%Y-%m-%d')
+        and user_id = #{userId} and state = 1
+    </select>
+
+    <!--根据月份查询所有出差记录-->
+    <select id="findBusinessTripByDateYM" resultType="BusinessTripDO">
+        SELECT <include refid="select_colunm"/> FROM t_business_trip bt
+        WHERE bt.start_time like concat(#{dateYM},'%')
+        and bt.user_id = #{userId} and state = 1
+    </select>
+</mapper>

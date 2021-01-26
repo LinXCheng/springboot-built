@@ -1,0 +1,125 @@
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+#wrap {
+    width: 100%;
+    margin: 0 auto;
+    background: #FFF;
+}
+
+#left_dict {
+    float: left;
+    width: 30%;
+    height: 100%;
+    margin-right: 2%;
+    overflow: auto;
+}
+.right_dict {
+    float: left;
+    width: 68%;
+    overflow: auto;
+}
+
+.clear {
+    clear: both;
+}
+
+#role_detail {
+    display: inline-table;
+    width: 1000px;
+    border-left: none;
+    border-bottom: none;
+    border-right: none;
+}
+
+#role {
+    display: block;
+    width: 1000px;
+}
+
+table.dataTable tbody#role tr td {
+    width: 4%;
+    padding: 8px 9px !important;
+    position: relative;
+    background-color: transparent;
+    border-bottom: none;
+}
+
+table.dataTable tbody#role tr td.seCode:FIRST-CHILD {
+    width: 7%;
+}
+
+table.dataTable tbody#role tr td.seCode {
+    width: 10%
+}
+
+#role_detail {
+    display: inline-table;
+    width: 1000px;
+}
+
+#role_detail > thead {
+    display: inline-table;
+    width: 1000px;
+}
+
+.cn {
+    text-align: center;
+}
+
+.tn {
+    width: 4%;
+}
+
+.tn.seCode {
+    width: 10%;
+}
+
+.tn.seCode:FIRST-CHILD {
+    width: 7%;
+}
+
+#left_dict .table > thead > tr > th, #left_dict .table > tbody > tr > td {
+    padding: 8px !important;
+}
+
+.table-bordered > thead > tr > th {
+    padding: 8px 6px !important;
+    position: relative;
+    background-color: transparent;
+    border-bottom: none;
+}
+
+input[type="checkbox"] {
+    position: absolute;
+    margin: 5px 12px;
+}
+
+.table-striped > tbody > tr.selected > td {
+    background-color: #ABB9D3;
+}
+
+.chosenall {
+    margin-left: 32%;
+    margin-top: 5px;
+}
+
+table.dataTable thead tr th:last-child {
+    min-width: 20%;
+}
+
+table.dataTable tbody#role tr td:last-child {
+    min-width: 20%;
+}
+
+table.dataTable tbody#role tr td:last-child input {
+    position: relative;
+    margin-right: 1px;
+}
+
+.btn-div {
+	margin-left: 2%;
+}

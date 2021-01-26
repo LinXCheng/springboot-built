@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--用户管理-->
+<mapper namespace="com.lx.attendance.dao.UserDao">
+    <parameterMap id="User" type="com.lx.attendance.model.domain.UserDO"/>
+
+    <sql id="User_Column_List">
+		id, username, password, role_id, tel, nickname, create_time, update_time, delete_status, address,photo,type,email,wage
+	</sql>
+
+    <!--检验用户名是否存在-->
+    <select id="queryExistUsername" resultType="com.lx.attendance.model.domain.UserDO">
+        select
+        <include refid="User_Column_List"/>
+        from t_user where username = #{username}
+        <choose>
+            <when test="id != null and id != ''">
+                and  id != #{id}
+            </when>
+        </choose>
+    </select>
+
+    <!--新增用户 -->
+    <insert id="addUser" parameterType="com.lx.attendance.model.domain.UserDO">
+		insert into t_user (username, password, tel,address ,role_id,nickname,
+		create_time, update_time , delete_status, type,email,wage)
+		values (#{username}, #{password}, #{tel},#{address} ,#{roleId},#{nickname},
+		now(), now(), #{deleteStatus}, #{type}, #{email},#{wage})
+	</insert>
+    <!--根据用户id改变用户状态，0表示有效，1表示无效-->
+    <update id="changeStatus">
+        update t_user set delete_status = #{deleteStatus} where id = #{id}
+    </update>
+
+    <!--修改密码-->
+    <update id="updatePassword">
+		 update t_user
+		 set password = #{password}
+		 where id = #{id}
+	</update>
+
+    <!--修改用户信息-->
+    <update id="updateUserInfo" parameterType="com.lx.attendance.model.domain.UserDO">
+        update t_user
+        <set>
+            <if test="tel != null and tel != ''">
+                tel = #{tel},
+            </if>
+            <if test="nickname != null and nickname != ''">
+                nickname = #{nickname},
+            </if>
+            <if test="address != null and address != ''">
+                address = #{address},
+            </if>
+            update_time = NOW() ,
+            <if test="photo != null and photo != ''">
+                photo = #{photo}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+    <!--根据用户id修改用户信息-->
+    <update id="updateUser" parameterType="com.lx.attendance.model.domain.UserDO">
+        update t_user
+        <set>
+            <if test="type ==0 and username != null and username != ''">
+                username = #{username},
+            </if>
+            <if test="tel != null and tel != ''">
+                tel = #{tel},
+            </if>
+            <if test="nickname != null and nickname != ''">
+                nickname = #{nickname},
+            </if>
+            <if test="address != null and address != ''">
+                address = #{address},
+            </if>
+            update_time = NOW() ,
+            <if test="roleId != null and roleId != ''">
+                role_id = #{roleId},
+            </if>
+            <if test="roleId == null or roleId == ''">
+                role_id = null,
+            </if>
+            delete_status = #{deleteStatus},
+            <if test="password != null and '********'.toString() != password">
+                password = #{password},
+            </if>
+            <if test="wage != null and wage != ''">
+                wage = #{wage}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+
+    <!--根据用户id查询用户信息-->
+    <select id="findUserInfo" resultType="com.lx.attendance.model.vo.UserVO">
+        select
+        <include refid="User_Column_List"/>
+        from t_user where id = #{id}
+    </select>
+
+    <!--查询所有用户 -->
+    <select id="findAll" resultType="com.lx.attendance.model.vo.UserVO">
+        select u.*,r.roleName
+        FROM t_user u
+        LEFT JOIN t_role r ON u.role_id=r.id
+        where 1 = 1
+        <choose>
+        <when test="keyword != null and keyword != ''">
+            u.username like CONCAT("%",#{keyword},"%")
+        </when>
+        <when test="roleId == 2">
+            and role_id != #{roleId} and role_id != 1
+        </when>
+    </choose>
+    </select>
+
+
+    <!--根据用户角色查询用户-->
+    <update id="updateUserRole">
+		update  t_user  set role_id = null
+		where role_id = #{roleId}
+	</update>
+
+    <!--删除用户-->
+    <delete id="deleteUser" parameterType="Long">
+		delete from t_user where id = #{id}
+	</delete>
+</mapper>

@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--菜单管理-->
+<mapper namespace="com.lx.attendance.dao.MenuDao">
+    <parameterMap id="MenuDO" type="com.lx.attendance.model.domain.MenuDO"/>
+    <sql id="Base_Column_List">
+		id, name, level, pid, path, code,menuType
+	</sql>
+
+    <!--查询菜单列表-->
+    <select id="findMenuList" resultType="com.lx.attendance.model.vo.MenuVO" parameterType="String">
+        SELECT * FROM ( SELECT * FROM
+        (SELECT id,NAME,LEVEL,path,IF(pid=0,NULL,NULL) pid ,NAME parentname FROM t_menu sm
+        WHERE sm.pid=0 ORDER BY LEVEL)
+        t2
+        UNION
+        SELECT * FROM(SELECT sm.id,sm.name,sm.level,sm.path,sm.pid,su.name parentname
+        FROM t_menu sm
+        INNER JOIN t_menu su ON sm.pid=su.id
+        WHERE sm.pid!=0 ORDER BY sm.pid,sm.level
+        )t1
+        ) t3
+        <where>
+            <choose>
+                <when test="_parameter != null">
+                    name like CONCAT("%",#{keyword},"%")
+                </when>
+            </choose>
+        </where>
+    </select>
+
+    <!--新增菜单-->
+    <insert id="insertMenu">
+       INSERT INTO t_menu (name,level,pid,path,code,menuType) VALUE ( #{name}, #{level}, #{pid}, #{path}, #{code}, #{menuType})
+   </insert>
+
+    <!--根据id查询菜单-->
+    <select id="findMenuById" parameterType="Long" resultType="com.lx.attendance.model.domain.MenuDO">
+        select
+        <include refid="Base_Column_List"/>
+        from t_menu where id=#{id}
+    </select>
+
+    <!--查询父级菜单-->
+    <select id="findParentsMenu" resultType="com.lx.attendance.model.domain.MenuDO" parameterType="Long">
+        select
+        <include refid="Base_Column_List"/>
+        from t_menu sm WHERE sm.pid=0
+        <choose>
+            <when test="_parameter != null">
+                and id != #{id}
+            </when>
+        </choose>
+        ORDER BY sm.level
+    </select>
+
+    <!--查询子菜单-->
+    <select id="findChildMenuByPid" resultType="com.lx.attendance.model.MenuDTO">
+        select
+        <include refid="Base_Column_List"/>
+        from t_menu sm WHERE sm.pid!=0 ORDER BY sm.level
+    </select>
+
+    <!--修改菜单-->
+    <update id="updateMenuById" parameterMap="MenuDO">
+        update t_menu set name = #{name}, level = #{level}, pid = #{pid}, path = #{path}, code = #{code}, menuType=#{menuType}
+        where id = #{id}
+    </update>
+
+    <!--检测编码是否重复-->
+    <select id="checkCode" parameterMap="MenuDO" resultType="com.lx.attendance.model.domain.MenuDO">
+        select <include refid="Base_Column_List"/>
+        from t_menu
+        where 1=1
+        <choose>
+            <when test="id !=null and id != ''">
+                and id != #{id} and code = #{code}
+            </when>
+            <otherwise>
+                and code = #{code}
+            </otherwise>
+        </choose>
+    </select>
+
+
+    <!--根据用户角色加载菜单-->
+    <select id="findMenuListByUserRole" resultType="com.lx.attendance.model.vo.MenuVO">
+        SELECT m.*
+        FROM t_menu m
+        INNER JOIN (
+            SELECT * FROM t_menu m
+            INNER JOIN (
+                SELECT DISTINCT(menuId) FROM t_resources r INNER JOIN t_resources_type rt ON r.type=rt.id
+                WHERE FIND_IN_SET(r.id,(
+                SELECT p.resourcesId FROM t_user u
+                INNER JOIN t_role r ON u.role_id=r.id
+                INNER JOIN t_permission p ON r.id=p.roleId
+                WHERE u.id = #{userId} and r.state = 0)
+                ) AND rt.id=1
+            )
+            t1 ON m.id=t1.menuId
+            WHERE m.menuType=0
+        ) t2 ON m.id=t2.pid GROUP BY id ORDER BY LEVEL
+    </select>
+
+    <!--根据父菜单Id查询用户角色对应的子菜单-->
+    <select id="findChildMenuListByUserRole" resultType="com.lx.attendance.model.MenuDTO">
+        SELECT m.*
+        FROM t_menu m
+        INNER JOIN (
+            SELECT DISTINCT(menuId) FROM t_resources r
+            INNER JOIN t_resources_type rt ON r.type= rt.id
+            WHERE FIND_IN_SET(r.id,(
+            SELECT p.resourcesId FROM t_user u
+            INNER JOIN t_role r ON u.role_id=r.id
+            INNER JOIN t_permission p ON r.id=p.roleId
+            WHERE u.id = #{userId} and r.state = 0)
+            ) AND r.type = 1
+        )
+        t1 ON m.id=t1.menuId
+    </select>
+    <!--根据id查询是否有子级菜单-->
+    <select id="findWhetherChild" parameterType="Long" resultType="com.lx.attendance.model.domain.MenuDO">
+        select <include refid="Base_Column_List"/>
+        from t_menu
+        where pid = #{id}
+    </select>
+    <!--删除菜单-->
+    <delete id="deleteMenuById" parameterType="Long">
+        delete from t_menu where id = #{id}
+    </delete>
+</mapper>

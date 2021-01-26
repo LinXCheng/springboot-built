@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--资源管理-->
+<mapper namespace="com.lx.attendance.dao.ResourcesPathDao">
+    <parameterMap id="ResourcesPathDO" type="com.lx.attendance.model.domain.ResourcesPathDO"/>
+    <sql id="Base_Column_List">
+		id, path, description, code, menuId, type
+	</sql>
+    <sql id="type_column">
+		id, name, code
+	</sql>
+
+    <!--查询所有资源-->
+    <select id="findResourcesPath" resultType="com.lx.attendance.model.vo.ResourcesPathVO" parameterType="String">
+        SELECT sr.id,sr.code,sr.description,sr.menuId,sr.path,srt.name typeName,sm.name menuName
+        FROM t_resources sr
+        INNER JOIN t_resources_type srt ON sr.type=srt.id
+        INNER JOIN t_menu sm ON sr.menuId=sm.id
+        <where>
+            <choose>
+                <when test="_parameter != null">
+                    sr.description like CONCAT("%",#{keyword},"%")
+                </when>
+            </choose>
+        </where>
+    </select>
+
+    <!--新增资源-->
+    <insert id="insertResources" parameterType="ResourcesPathDO">
+       INSERT INTO t_resources (description,path,code,menuId,type) VALUE ( #{description}, #{path}, #{code}, #{menuId}, #{type})
+   </insert>
+
+    <!--根据id查询资源-->
+    <select id="findResourcesById" parameterType="Long" resultType="com.lx.attendance.model.domain.ResourcesPathDO">
+        select
+        <include refid="Base_Column_List"/>
+        from t_resources where id=#{id}
+    </select>
+
+    <!--修改资源-->
+    <update id="updateResourcesPathById" parameterType="ResourcesPathDO">
+        update t_resources set description = #{description}, path = #{path}, code = #{code}, menuId = #{menuId}, type = #{type}
+        where id = #{id}
+    </update>
+
+    <!--检验资源编码是否重复-->
+    <select id="checkCode" resultType="com.lx.attendance.model.domain.ResourcesPathDO">
+        select <include refid="Base_Column_List"/>
+        from t_resources
+        where 1=1
+        <choose>
+            <when test="id != null and id !=''">
+                and code = #{code} and id != #{id}
+            </when>
+            <otherwise>
+                and code = #{code}
+            </otherwise>
+        </choose>
+    </select>
+    <!--根据menuId查询对应的类型集合但排除其他功能-->
+    <select id="findChildMenuByMenuId" resultType="com.lx.attendance.model.vo.ResourcesTypeVO" >
+        SELECT tr.*,r.id resourcesId,r.description FROM t_resources r
+        INNER JOIN t_resources_type tr ON r.type=tr.id
+            WHERE menuId = #{menuId}
+            <choose>
+                <when test="typename != null and typename != ''">
+                    and type = '11'
+                </when>
+                <otherwise>
+                    and type != '11'
+                </otherwise>
+            </choose>
+    </select>
+
+    <!--根据用户角色查询权限-->
+    <select id="findUserPermission" resultType="com.lx.attendance.model.domain.ResourcesPathDO">
+        SELECT <include refid="Base_Column_List"/>
+        FROM t_resources r
+        WHERE FIND_IN_SET(id,(
+            SELECT p.resourcesId FROM t_user u
+            INNER JOIN t_role r ON u.role_id=r.id
+            INNER JOIN t_permission p ON r.id=p.roleId
+            WHERE u.id = #{userId} AND r.state = 0
+            )
+        )
+    </select>
+    <!-- 查询所有资源 -->
+    <select id="findAllResourcesList" resultType="com.lx.attendance.model.domain.ResourcesPathDO" >
+        select <include refid="Base_Column_List"/>
+        from t_resources
+    </select>
+    
+    <select id="findAllCodeList" resultType="String" >
+        SELECT code
+        FROM t_resources r
+        WHERE FIND_IN_SET(id,(
+            SELECT p.resourcesId FROM t_user u
+            INNER JOIN t_role r ON u.role_id=r.id
+            INNER JOIN t_permission p ON r.id=p.roleId
+            WHERE u.id = #{id} AND r.state = 0
+            )
+        )
+    </select>
+
+    <!--根据menuId查询是否存在绑定的资源-->
+    <select id="findResourcesByMenuId" parameterType="Long" resultType="com.lx.attendance.model.domain.ResourcesPathDO">
+        select <include refid="Base_Column_List"/>
+        from t_resources
+        where menuId = #{menuId}
+    </select>
+
+    <!--判断该资源是否被某个角色所使用-->
+    <select id="findUseResourcesRole" resultType="int" parameterType="Long">
+        SELECT FIND_IN_SET(#{id},(SELECT GROUP_CONCAT(p.resourcesId) FROM t_permission p) ) AS COUNT
+    </select>
+
+    <!--删除资源-->
+    <delete id="deleteResources" parameterType="Long">
+        delete from t_resources where id = #{id}
+    </delete>
+</mapper>

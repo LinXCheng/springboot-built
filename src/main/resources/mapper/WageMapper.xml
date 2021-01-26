@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.WageDao">
+    <parameterMap id="WageDO" type="com.lx.attendance.model.domain.WageDO"/>
+    <!--新增用户工资-->
+    <insert id="insertWage" parameterType="WageDO" >
+        insert into t_wage (yearMonth, wage, leave_day, leave_amount, business_day, business_amount, overtime_day, overtime_amount, total_amount, pension, unemployment_benefits, medical, housing_fund, five_insurances, gross_salary, taxable_company, rate, personal_income_tax, real_wages, user_id, other_deduct, attendance, daily_wage) values
+        (#{yearMonth}, #{wage}, #{leaveDay}, #{leaveAmount}, #{businessDay}, #{businessAmount}, #{overtimeDay}, #{overtimeAmount}, #{totalAmount}, #{pension}, #{unemploymentBenefits}, #{medical}, #{housingFund}, #{fiveInsurances}, #{grossSalary}, #{taxableCompany}, #{rate}, #{personalIncomeTax}, #{realWages}, #{userId}, #{otherDeduct},#{attendance}, #{dailyWage})
+    </insert>
+
+    <!--查询某个用户某个月的工资-->
+    <select id="findWageByUserId" resultType="wageDO">
+        select * from t_wage
+        where yearMonth = #{yearMonth} and user_id = #{userId}
+    </select>
+
+
+    <!--查询某个月的工资-->
+    <select id="findAllWage" resultType="wageDO">
+        select w.*,u.nickname from t_wage w inner join t_user u on w.user_id = u.id
+        where w.yearMonth = #{yearMonth}
+        <choose>
+            <when test="keyword != null and keyword != ''">
+               and u.nickname like concat('%',#{keyword},'%')
+            </when>
+        </choose>
+    </select>
+    <!--查询某个月的工资-->
+    <select id="findWage" resultType="WageDO">
+        SELECT w.*,u.nickname,u.id user_id_standby
+        FROM t_user u
+        LEFT JOIN (SELECT * FROM t_wage w WHERE w.yearMonth = #{yearMonth}) w
+        ON u.id = w.user_id
+        WHERE w.id IS NULL
+    </select>
+    <!--新增用户工资-->
+    <insert id="insertWageBatch" parameterType="WageDO" >
+        insert into t_wage (yearMonth, wage, leave_day, leave_amount, business_day, business_amount, overtime_day, overtime_amount, total_amount, pension, unemployment_benefits, medical, housing_fund, five_insurances, gross_salary, taxable_company, rate, personal_income_tax, real_wages, user_id, other_deduct, attendance, daily_wage)
+        value
+        <foreach collection ="list" item="wage" separator =",">
+            (#{wage.yearMonth}, #{wage.wage}, #{wage.leaveDay}, #{wage.leaveAmount}, #{wage.businessDay}, #{wage.businessAmount}, #{wage.overtimeDay}, #{wage.overtimeAmount}, #{wage.totalAmount}, #{wage.pension}, #{wage.unemploymentBenefits}, #{wage.medical}, #{wage.housingFund}, #{wage.fiveInsurances}, #{wage.grossSalary}, #{wage.taxableCompany}, #{wage.rate}, #{wage.personalIncomeTax}, #{wage.realWages}, #{wage.userId}, #{wage.otherDeduct},#{wage.attendance}, #{wage.dailyWage})
+        </foreach >
+    </insert>
+</mapper>

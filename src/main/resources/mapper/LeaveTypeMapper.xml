@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.LeaveTypeDao">
+    <parameterMap id="LeaveTypeDO" type="com.lx.attendance.model.domain.LeaveTypeDO"/>
+    <sql id="select_colunm">
+        id, name
+    </sql>
+
+    <!--查询请假类型-->
+    <select id="findLeaveType" resultType="LeaveTypeDO">
+          SELECT <include refid="select_colunm"/> FROM t_leave_type
+    </select>
+
+    <!--查询本月请假记录-->
+    <select id="findLeaveBySystem" resultType="LeaveTypeDO">
+            SELECT lt.id,lt.name,IFNULL(SUM(number_day),0) number_day
+            FROM t_leave_type lt
+            LEFT JOIN (
+            SELECT * FROM t_leave
+            WHERE user_id = #{userId} AND start_time LIKE CONCAT(DATE_FORMAT(NOW(),'%Y-%m'),'%') and state = 1
+            ) l
+            ON l.type_id = lt.id
+            GROUP BY lt.id
+    </select>
+</mapper>

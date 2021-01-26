@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.PermissionDao">
+    <parameterMap id="PermissionDO" type="com.lx.attendance.model.domain.PermissionDO"/>
+    <sql id="select_colunm">
+        id,resourcesId,roleId
+    </sql>
+    <!--判断该角色是否拥有权限-->
+    <select id="findRolePermission" parameterType="Integer" resultType="com.lx.attendance.model.domain.PermissionDO" >
+        select <include refid="select_colunm"/>
+        from t_permission
+        where roleId = #{roleId}
+    </select>
+
+    <!--新增权限-->
+    <insert id="insertRolePermission" parameterMap="PermissionDO">
+        insert  into t_permission (resourcesId, roleId) value ( #{resourcesId}, #{roleId})
+    </insert>
+
+    <!--更新角色权限-->
+    <update id="updateRolePermission" parameterMap="PermissionDO">
+        update t_permission set resourcesId = #{resourcesId}, roleId = #{roleId}
+        where roleId = #{roleId}
+    </update>
+
+    <!--删除角色权限-->
+    <delete id="deleteRolePermission">
+        delete  from t_permission where roleId = #{roleId}
+    </delete>
+</mapper>

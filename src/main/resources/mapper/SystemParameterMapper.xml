@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.SystemParameterDao">
+    <parameterMap id="SystemParameterDO" type="com.lx.attendance.model.domain.SystemParameterDO"/>
+    <sql id="select_colunm">
+        id, name, money, type, wage
+    </sql>
+    <!--查询所有系统参数-->
+    <select id="findSystemParameter" resultType="SystemParameterDO" >
+        select <include refid="select_colunm"/>
+        from t_system_parameter
+    </select>
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lx.attendance.dao.RoleDao">
+
+    <parameterMap id="RoleDO" type="com.lx.attendance.model.domain.RoleDO"/>
+
+    <sql id="Column">
+		id, roleName, roleCode, type, state, create_time, update_time
+	</sql>
+
+    <select id="findRoleList" resultType="com.lx.attendance.model.vo.RoleVO">
+        select <include refid="Column"/>
+        from t_role
+        <choose>
+            <when test="roleId == 2">
+                where id != 1 and id != 2
+            </when>
+        </choose>
+    </select>
+
+    <select id="findRoleById" resultType="com.lx.attendance.model.domain.RoleDO" parameterType="Integer">
+        select <include refid="Column"/>
+        from t_role
+        where id = #{id}
+    </select>
+
+    <update id="updateRoleById" parameterType="RoleDO">
+        update t_role set roleName = #{roleName}, roleCode = #{roleCode}, state = #{state}, update_time = #{updateTime}
+        where id = #{id}
+    </update>
+    
+    <!--新增角色-->
+    <insert id="insertRole" parameterType="RoleDO">
+        insert into t_role(roleName, roleCode, state, update_time, create_time) value (#{roleName} ,#{roleCode}, #{state}, #{updateTime}, #{createTime})
+    </insert>
+
+    <!--删除角色-->
+    <delete id="deleteRoleId" parameterType="Integer">
+        delete from t_role where id=#{id}
+    </delete>
+</mapper>

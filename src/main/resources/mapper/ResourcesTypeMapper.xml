@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.lx.attendance.dao.ResourcesTypeDao">
+    <parameterMap id="ResourcesTypeDO" type="com.lx.attendance.model.domain.ResourcesTypeDO"/>
+
+    <sql id="Column">
+		id, name, code
+	</sql>
+
+    <!--查询资源类型-->
+    <select id="findResourcesType" resultType="com.lx.attendance.model.domain.ResourcesTypeDO">
+        select <include refid="Column"/>
+        from t_resources_type
+        where 1=1
+        <choose>
+            <when test="code != null and code !=''">
+                and id != '11'
+            </when>
+        </choose>
+    </select>
+
+    <!--根据id查询资源类型-->
+    <select id="findResourcesTypeRecord" parameterType="Long" resultType="com.lx.attendance.model.domain.ResourcesTypeDO">
+        select <include refid="Column"/>
+        from t_resources_type
+        where id = #{id}
+    </select>
+</mapper>

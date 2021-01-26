@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.LeaveDao">
+    <parameterMap id="LeaveDO" type="com.lx.attendance.model.domain.LeaveDO"/>
+    <sql id="select_colunm">
+        id, start_time, end_time, type_id, apply_reason, number_day, apply_time, audit_time, user_id, audit_id, state
+    </sql>
+    <sql id="select_colunm2">
+         start_time, end_time, apply_reason, number_day, apply_time, audit_time, state
+    </sql>
+    <!--新增请假记录-->
+    <insert id="insertLeave" parameterMap="LeaveDO">
+        insert  into t_leave (start_time, end_time, type_id, apply_reason, number_day, apply_time, user_id, state) value ( #{startTime}, #{endTime}, #{typeId}, #{applyReason}, #{numberDay}, NOW(), #{userId}, #{state})
+    </insert>
+
+    <!--员工查询请假记录，根据员工id-->
+    <select id="findLeaveByUserId" parameterType="Long" resultType="LeaveDO">
+        SELECT l.id,  <include refid="select_colunm2"/>, lt.name typeName FROM t_leave l INNER JOIN t_leave_type lt ON l.type_id = lt.id where l.user_id = #{userId}
+        <choose>
+            <when test="startTime != null and endTime != null">
+                and   #{startTime} >= l.start_time and  l.end_time >= #{endTime}
+            </when>
+        </choose>
+        ORDER BY field(l.state,0,2,1),apply_time desc
+    </select>
+
+    <!--根据id查询请假详情-->
+    <select id="findLeaveById" parameterType="Long" resultType="LeaveDO">
+        select <include refid="select_colunm"/> from t_leave where id = #{id}
+    </select>
+    <!--修改请假记录-->
+    <update id="updateLeaveById" parameterType="com.lx.attendance.model.domain.LeaveDO">
+        update t_leave set start_time = #{startTime}, end_time = #{endTime}, type_id = #{typeId}, apply_reason = #{applyReason}, number_day = #{numberDay} ,state = #{state}
+        where id = #{id} and state != 1
+    </update>
+
+    <!--管理员或者超级管理员查看所有请假记录-->
+    <select id="findAllLeave" resultType="LeaveDO">
+        SELECT l.id,  <include refid="select_colunm2"/>, lt.name typeName, u.nickname
+        FROM t_leave l
+        INNER JOIN t_leave_type lt ON l.type_id = lt.id
+        INNER JOIN t_user u ON l.user_id = u.id
+        where 1=1
+        <choose>
+            <when test="startTime != null and endTime != null">
+                and   #{startTime} >= l.start_time and  l.end_time >= #{endTime}
+            </when>
+            <when test="keyword != null and keyword != ''">
+                and   u.nickname like concat('%',#{keyword},'%')
+            </when>
+        </choose>
+        ORDER BY field(l.state,0,2,1),apply_time desc
+    </select>
+
+    <!--修改请假记录状态-->
+    <update id="updateStateById">
+        update t_leave
+        <set>
+            <if test="type == 1">
+              state = 1
+            </if>
+            <if test="type == 2 ">
+                state = 0
+            </if>
+            <if test="type == 3 ">
+                state = 2
+            </if>
+            ,audit_time = NOW()
+            ,audit_id = #{userId}
+        </set>
+        where id = #{id}
+        <choose>
+            <when test="type == 1">
+                and state = 0
+            </when>
+            <when test="type == 2">
+                and state != 0
+            </when>
+            <when test="type == 3">
+                and state = 0
+            </when>
+        </choose>
+    </update>
+
+    <!--删除驳回或者审核中的记录-->
+    <delete id="deleteLeave" parameterType="Long">
+        delete from t_leave where id = #{id} and state != 1;
+    </delete>
+
+    <!--根据系统时间是否存于请假中-->
+    <select id="findLeaveBySystemDate" resultType="LeaveDO">
+        SELECT * FROM t_leave l
+        WHERE DATE_FORMAT(#{systemDate},'%Y-%m-%d') >= l.start_time AND l.end_time >= DATE_FORMAT(#{systemDate},'%Y-%m-%d')
+        and l.user_id = #{userId} and state = 1
+    </select>
+
+    <!--根据月份查询所有请假记录-->
+    <select id="findLeaveByDateYM" resultType="LeaveDO">
+        SELECT <include refid="select_colunm"/> FROM t_leave l
+        WHERE l.start_time like concat(DATE_FORMAT(#{dateYM},'%Y-%m'),'%')
+        and l.user_id = #{userId} and state = 1
+    </select>
+</mapper>

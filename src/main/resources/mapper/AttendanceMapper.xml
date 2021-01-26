@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!--后台权限管理-->
+<mapper namespace="com.lx.attendance.dao.AttendanceDao">
+    <parameterMap id="AttendanceDO" type="com.lx.attendance.model.domain.AttendanceDO"/>
+    <sql id="select_colunm">
+        id, time, morning, afternoon, type, state,userId
+    </sql>
+    <!--新增打卡记录(由于新增打卡记录只能是打卡上班或者下班所以默认状态是只有一次打卡记录并且是1或者2 0 正常上下班打卡 1 迟到/早退 2只有一次打卡记录)-->
+    <insert id="insertAttendance" parameterType="com.lx.attendance.model.domain.AttendanceDO">
+        insert into t_attendance (time, morning, afternoon, type, state, userId) values ( #{time}, #{morning}, #{afternoon}, #{type}, #{state}, #{userId})
+    </insert>
+    <!--修改打卡记录（修改打卡记录只能是处于打卡下班场景）-->
+    <update id="updateSignOut" parameterType="com.lx.attendance.model.domain.AttendanceDO">
+        UPDATE t_attendance SET afternoon = #{afternoon} ,state = #{state} where id = #{id}
+    </update>
+    <!--根据日期查询是否存在打卡上班的记录-->
+    <select id="findSignIn"  resultType="com.lx.attendance.model.domain.AttendanceDO">
+        select <include refid="select_colunm"/>
+        from t_attendance a
+        where a.time = DATE_FORMAT(#{time},'%Y-%m-%d') and a.userId = #{userId}
+    </select>
+
+    <!--根据用户id查询所有考勤记录-->
+    <select id="findAttendanceByUserId" resultType="com.lx.attendance.model.domain.AttendanceDO">
+        select <include refid="select_colunm"/>
+        from t_attendance a
+        where a.userId = #{userId}
+        <choose>
+            <when test="state==0">
+                and (a.state = 0 or a.state =3)
+            </when>
+            <otherwise>
+                and a.state != 0 and a.state != 3
+            </otherwise>
+        </choose>
+        order by a.time
+    </select>
+
+    <!--新增打卡记录(由于新增打卡记录只能是打卡上班或者下班所以默认状态是只有一次打卡记录并且是1或者2 0 正常上下班打卡 1 迟到/早退 2只有一次打卡记录)-->
+    <insert id="insertRetroactive">
+        insert into t_attendance_retroactive (time, state, user_id, apply_time) value
+        <foreach collection ="list" item="retroactive" separator =",">
+            ( #{retroactive.time}, 0, #{retroactive.userId},now())
+        </foreach>
+    </insert>
+
+    <!--查询用户所有补签记录-->
+    <select id="findRetroactiveById"  resultType="RetroactiveDO">
+        select * from t_attendance_retroactive where user_id = #{userId} and time like concat(DATE_FORMAT(#{YearMonth},'%Y-%m'),'%') order by field(state,0,2,1)
+    </select>
+    <!--查询所有补签记录-->
+    <select id="findRetroactive"  resultType="RetroactiveDO">
+        select ar.*,u.nickname from t_attendance_retroactive ar
+        inner join t_user u on ar.user_id = u.id
+        where time like concat(DATE_FORMAT(#{YearMonth},'%Y-%m'),'%')
+        <choose>
+            <when test="keyword != null and keyword != ''">
+                and u.nickname like concat('%',#{keyword},'%')
+            </when>
+        </choose>
+        order by field(state,0,2,1)
+    </select>
+    <!--修改补签状态-->
+    <update id="updateRetroactiveState">
+        update t_attendance_retroactive set state = #{state}
+        <choose>
+            <when test="state == 1 or state == 2">
+                , audit_time =  now()
+            </when>
+        </choose>
+         where find_in_set(id,#{idStr}) and state != 1
+    </update>
+
+    <!--根据补签id集合查询记录-->
+    <select id="findAttendanceByRetroactiveId" resultType="AttendanceDO">
+        SELECT a.*
+        FROM t_attendance_retroactive ar
+        INNER JOIN t_attendance a ON (ar.user_id=a.userId AND ar.time= a.time)
+        WHERE FIND_IN_SET(ar.id,#{idStr})
+    </select>
+
+    <update id="updateAttendance">
+         UPDATE t_attendance SET
+        <choose>
+            <when test="type == 1">
+                morning = DATE_FORMAT(#{MorningTime},'%H:%i:%s'),state = 0
+            </when>
+            <when test="type == 2">
+                afternoon = DATE_FORMAT(#{AfternoonTime},'%H:%i:%s'),state = 0
+            </when>
+            <when test="type ==3">
+                morning = DATE_FORMAT(#{MorningTime},'%H:%i:%s'),state = 3
+            </when>
+            <when test="type == 4">
+                morning = DATE_FORMAT(#{MorningTime},'%H:%i:%s'), afternoon = DATE_FORMAT(#{AfternoonTime},'%H:%i:%s'),  state = 0
+            </when>
+        </choose>
+         where find_in_set(id,#{idStr});
+    </update>
+
+    <!--删除驳回或者审核中的记录-->
+    <delete id="deleteRetroactive" parameterType="Long">
+        delete from t_attendance_retroactive  where id = #{id} and state != 1;
+    </delete>
+
+    <!--查询某月的所有签到记录-->
+    <select id="findAttendanceByTime" resultType="AttendanceDO">
+        SELECT <include refid="select_colunm"/>
+        FROM t_attendance
+        WHERE userId = #{userId} and time like concat(#{dateYM},'%')
+    </select>
+</mapper>
